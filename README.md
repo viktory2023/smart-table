@@ -1,1 +1,1 @@
-# smart-table
+https://github.com/viktory2023/smart-table.git
