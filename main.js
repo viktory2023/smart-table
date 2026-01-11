@@ -14,8 +14,8 @@ const applySearching = initSearching('search');
 const applySorting = initSorting(sampleTable.columns);
 
 async function render(action) {
-  const state = sampleTable.collectState();
-  let query = {};
+  let state = collectState(); // состояние полей из таблицы
+  let query = {}; // здесь будут формироваться параметры запроса
 
   query = applySearching(query, state, action);
   query = applyFiltering(query, state, action);
@@ -29,6 +29,7 @@ async function render(action) {
 
 async function init() {
   const indexes = await api.getIndexes();
+
   updateIndexes(sampleTable.filter.elements, {
     searchBySeller: indexes.sellers
   });
