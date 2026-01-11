@@ -16,15 +16,14 @@ const applySorting = initSorting(sampleTable.columns);
 async function render(action) {
   let state = collectState(); // состояние полей из таблицы
   let query = {}; // здесь будут формироваться параметры запроса
-  // другие apply*
-  // result = applySearching(result, state, action);
-  // result = applyFiltering(result, state, action);
-  // result = applySorting(result, state, action);
-  query = applyPagination(query, state, action); // обновляем query
 
-  const { total, items } = await api.getRecords(query); // запрашиваем данные с собранными параметрами
+  query = applySearching(query, state, action);
+  query = applyFiltering(query, state, action);
+  query = applySorting(query, state, action);
+  query = applyPagination(query, state, action);
 
-  updatePagination(total, query); // перерисовываем пагинатор
+  const { total, items } = await api.getRecords(query);
+  updatePagination(total, query);
   sampleTable.render(items);
 }
 
