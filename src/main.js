@@ -8,7 +8,7 @@ const api = initData();
 
 const sampleTable = window.sampleTable;
 
-const { applyPagination, updatePagination } = initPagination(sampleTable.pagination);
+const { applyPagination, updatePagination } = initPagination(sampleTable.pagination); // вот тут ругается, не понимаю в каком направлении двигаться
 const { applyFiltering, updateIndexes } = initFiltering(sampleTable.filter.elements);
 const applySearching = initSearching('search');
 const applySorting = initSorting(sampleTable.columns);
