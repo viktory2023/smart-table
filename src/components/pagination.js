@@ -1,6 +1,6 @@
 import { getPages } from "../lib/utils.js";
 
-export const initPagination = ({ pages, fromRow, toRow, totalRows }, createPage) => { // вот тут определен pages, тогда  откуда ошибка о неопределнности этого параметра? в HTML же указано такое же наименование элемента
+export const initPagination = ({ pages, fromRow, toRow, totalRows }, createPage) => {
   let pageCount = 1;
 
   const applyPagination = (query, state, action) => {
