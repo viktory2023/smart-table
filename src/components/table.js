@@ -1,64 +1,68 @@
-export function initTable({ root, onAction }) {
-    if (!root) {
-    throw new Error('initTable: root is required');
-  }
-  if (!onAction) {
-    throw new Error('initTable: onAction is required');
-  }
-  const container = document.querySelector(root);
-  if (!container) {
-    throw new Error(`initTable: element ${root} not found`);
-  }
+import { cloneTemplate } from "../lib/utils.js";
 
-  const filterWrapper = document.createElement('div');
+/**
+ * Инициализирует таблицу и вызывает коллбэк при любых изменениях и нажатиях на кнопки
+ *
+ * @param {Object} settings
+ * @param {(action: HTMLButtonElement | undefined) => void} onAction
+ * @returns {{container: Node, elements: *, render: Function}}
+ */
+export function initTable(settings, onAction) {
+  const { tableTemplate, rowTemplate, before = [], after = [] } = settings;
+  const root = cloneTemplate(tableTemplate);
 
-  const sellerSelect = document.createElement('select');
-  sellerSelect.name = 'searchBySeller';
+  // #1.2 — вывести дополнительные шаблоны до и после таблицы
 
-  const emptyOption = document.createElement('option');
-  emptyOption.value = '';
-  emptyOption.textContent = 'Выберите';
+  [...before].reverse().forEach(name => {
+    root[name] = cloneTemplate(name);
+    root.container.prepend(root[name].container);
+  });
 
-  sellerSelect.append(emptyOption);
-  sellerSelect.addEventListener('change', () => onAction());
+  after.forEach(name => {
+    root[name] = cloneTemplate(name);
+    root.container.append(root[name].container);
+  });
 
-  filterWrapper.append(sellerSelect);
-  container.append(filterWrapper);
+  // #1.3 — обработать события и вызвать onAction()
 
-  const table = document.createElement('table');
-  const tbody = document.createElement('tbody');
-  table.append(tbody);
-  container.append(table);
+  root.container.addEventListener('change', () => {
+    onAction();
+  });
 
-  const pagination = {
-    elements: {},
-    update() {}
+  root.container.addEventListener('reset', () => {
+    setTimeout(onAction);
+  });
+
+  root.container.addEventListener('submit', (e) => {
+    e.preventDefault();
+    onAction(e.submitter);
+  });
+
+  // #1.1 — преобразовать данные в массив строк таблицы
+
+  const render = (data) => {
+    const nextRows = data.map(item => {
+      const row = cloneTemplate(rowTemplate);
+
+      Object.keys(item).forEach(key => {
+        if (row.elements[key]) {
+          row.elements[key].textContent = item[key];
+        }
+      });
+
+      return row.container;
+    });
+
+    root.elements.rows.replaceChildren(...nextRows);
   };
+
+  const columns = Array.from(
+    root.container.querySelectorAll('button[name="sort"]')
+  );
 
   return {
-    render(items) {
-      tbody.innerHTML = '';
-      items.forEach(item => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td>${item.id}</td>
-          <td>${item.date}</td>
-          <td>${item.seller}</td>
-          <td>${item.customer}</td>
-          <td>${item.total}</td>
-        `;
-        tbody.append(tr);
-      });
-    },
-
-    pagination,
-
-    filter: {
-      elements: {
-        searchBySeller: sellerSelect
-      }
-    },
-
-    columns: []
-  };
+    ...root,
+    render,
+    columns
+  };;
 }

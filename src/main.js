@@ -1,73 +1,74 @@
-import { initData } from './data.js';
-import { initPagination } from './components/pagination.js';
-import { initFiltering } from './components/filtering.js';
-import { initSearching } from './components/searching.js';
-import { initSorting } from './components/sorting.js';
-import { initTable } from './components/table.js';
+import './fonts/ys-display/fonts.css';
+import './style.css';
 
-const api = initData();
+import { data as sourceData } from "./data/dataset_1.js";
+
+import { initData } from "./data.js";
+import { processFormData } from "./lib/utils.js";
+
+import { initTable } from "./components/table.js";
+import { initPagination } from "./components/pagination.js";
+import { initFiltering } from "./components/filtering.js";
+import { initSearching } from "./components/searching.js";
+import { initSorting } from "./components/sorting.js";
+
+const { data, ...indexes } = initData(sourceData);
 
 const sampleTable = initTable({
-  root: '#table',
-  onAction: render
+    tableTemplate: 'table',
+    rowTemplate: 'row',
+    before: ['search', 'header', 'filter'],
+    after: ['pagination']
+}, render);
+
+const applyPagination = initPagination(
+    sampleTable.pagination.elements,
+    (el, page, isCurrent) => {
+        const input = el.querySelector('input');
+        const label = el.querySelector('span');
+
+        input.value = page;
+        input.checked = isCurrent;
+        label.textContent = page;
+
+        return el;
+    }
+);
+
+const applyFiltering = initFiltering(sampleTable.filter.elements, {
+    searchBySeller: indexes.sellers
 });
 
-const { applyPagination, updatePagination } = initPagination(sampleTable.pagination);
-const { applyFiltering, updateIndexes } = initFiltering(sampleTable.filter.elements);
 const applySearching = initSearching('search');
+
 const applySorting = initSorting(sampleTable.columns);
 
 function collectState() {
-  const state = {};
+    const state = processFormData(new FormData(sampleTable.container));
 
-  const formElements = document.querySelectorAll(
-    '#table input, #table select'
-  );
+    const rowsPerPage = parseInt(state.rowsPerPage);
+    const page = parseInt(state.page ?? 1);
 
-  formElements.forEach(el => {
-    if (!el.name) return;
-
-    if (el.type === 'radio') {
-      if (el.checked) {
-        state[el.name] = el.value;
-      }
-    } else {
-      state[el.name] = el.value;
-    }
-  });
-
-  return state;
+    return {
+        ...state,
+        rowsPerPage,
+        page
+    };
 }
 
-async function render(action) {
-  let state = collectState(); // состояние полей из таблицы
+function render(action) {
+    let state = collectState();
+    let result = [...data];
 
-  const rowsPerPage = parseInt(state.rowsPerPage) || 10;
-  const page = parseInt(state.page) || 1;
+    result = applySearching(result, state, action);
+    result = applyFiltering(result, state, action);
+    result = applySorting(result, state, action);
+    result = applyPagination(result, state, action);
 
-  state = {
-    ...state,
-    rowsPerPage,
-    page
-  };
-  let query = {}; // здесь будут формироваться параметры запроса
-
-  query = applySearching(query, state, action);
-  query = applyFiltering(query, state, action);
-  query = applySorting(query, state, action);
-  query = applyPagination(query, state, action);
-
-  const { total, items } = await api.getRecords(query);
-  updatePagination(total, query);
-  sampleTable.render(items);
+    sampleTable.render(result);
 }
 
-async function init() {
-  const indexes = await api.getIndexes();
+const appRoot = document.querySelector('#app');
+appRoot.appendChild(sampleTable.container);
 
-  updateIndexes({
-    searchBySeller: indexes.sellers
-  });
-}
-
-init().then(render);
+render();
