@@ -1,68 +1,53 @@
 import { cloneTemplate } from "../lib/utils.js";
 
-/**
- * Инициализирует таблицу и вызывает коллбэк при любых изменениях и нажатиях на кнопки
- *
- * @param {Object} settings
- * @param {(action: HTMLButtonElement | undefined) => void} onAction
- * @returns {{container: Node, elements: *, render: Function}}
- */
 export function initTable(settings, onAction) {
   const { tableTemplate, rowTemplate, before = [], after = [] } = settings;
+
   const root = cloneTemplate(tableTemplate);
 
-  // #1.2 — вывести дополнительные шаблоны до и после таблицы
-
-  [...before].reverse().forEach(name => {
-    root[name] = cloneTemplate(name);
-    root.container.prepend(root[name].container);
+  before.forEach(name => {
+    const tpl = cloneTemplate(name);
+    root.container.prepend(tpl.container);
+    Object.assign(root.elements, tpl.elements);
   });
 
   after.forEach(name => {
-    root[name] = cloneTemplate(name);
-    root.container.append(root[name].container);
+    const tpl = cloneTemplate(name);
+    root.container.append(tpl.container);
+    Object.assign(root.elements, tpl.elements);
   });
 
-  // #1.3 — обработать события и вызвать onAction()
-
-  root.container.addEventListener('change', () => {
-    onAction();
-  });
-
-  root.container.addEventListener('reset', () => {
-    setTimeout(onAction);
-  });
-
-  root.container.addEventListener('submit', (e) => {
+  root.container.addEventListener('submit', e => {
     e.preventDefault();
     onAction(e.submitter);
   });
 
-  // #1.1 — преобразовать данные в массив строк таблицы
+  root.container.addEventListener('change', () => onAction());
 
   const render = (data) => {
-    const nextRows = data.map(item => {
+    const rows = data.map(item => {
       const row = cloneTemplate(rowTemplate);
-
-      Object.keys(item).forEach(key => {
+      Object.entries(item).forEach(([key, value]) => {
         if (row.elements[key]) {
-          row.elements[key].textContent = item[key];
+          row.elements[key].textContent = value;
         }
       });
-
       return row.container;
     });
 
-    root.elements.rows.replaceChildren(...nextRows);
+    root.elements.rows.replaceChildren(...rows);
   };
 
-  const columns = Array.from(
-    root.container.querySelectorAll('button[name="sort"]')
-  );
-
   return {
-    ...root,
+    container: root.container,
+    elements: root.elements,
     render,
-    columns
-  };;
+    pagination: {
+      elements: root.elements.pagination
+    },
+    filter: {
+      elements: root.elements.filter
+    },
+    columns: root.elements.header?.querySelectorAll('[data-field]')
+  };
 }

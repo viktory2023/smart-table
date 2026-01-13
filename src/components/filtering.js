@@ -1,36 +1,35 @@
-import { createComparison, defaultRules } from "../lib/compare.js";
+export function initFiltering(elements) {
 
-// #4.3 — настраиваем компаратор
-const compare = createComparison(defaultRules);
-
-export function initFiltering(elements, indexes) {
-
-    // #4.1 — заполняем выпадающие списки опциями
-    Object.keys(indexes).forEach(key => {
-        const select = elements[key];
-        if (!select) return;
-
-        Object.values(indexes[key]).forEach(value => {
-            const option = document.createElement('option');
-            option.value = value;
-            option.textContent = value;
-            select.append(option);
+    const updateIndexes = (elements, indexes) => {
+        Object.keys(indexes).forEach(key => {
+            elements[key].append(
+                ...Object.values(indexes[key]).map(value => {
+                    const option = document.createElement('option');
+                    option.value = value;
+                    option.textContent = value;
+                    return option;
+                })
+            );
         });
-    });
+    };
 
-    return (data, state, action) => {
+    const applyFiltering = (query, state) => {
+        const filter = {};
 
-        // #4.2 — обработка очистки поля
-        if (action === 'clear') {
-            return data;
-        }
+        Object.keys(elements).forEach(key => {
+            const el = elements[key];
+            if (el && el.value) {
+                filter[`filter[${el.name}]`] = el.value;
+            }
+        });
 
-        // #4.5 — фильтрация данных через компаратор
-        return data.filter(item =>
-            Object.keys(elements).every(key => {
-                if (!state[key]) return true;
-                return compare(item[key], state[key]);
-            })
-        );
+        return Object.keys(filter).length
+            ? Object.assign({}, query, filter)
+            : query;
+    };
+
+    return {
+        applyFiltering,
+        updateIndexes
     };
 }

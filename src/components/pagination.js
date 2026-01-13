@@ -1,46 +1,51 @@
 import { getPages } from "../lib/utils.js";
 
-const ROWS_PER_PAGE = 10;
+export const initPagination = ({ pages, fromRow, toRow, totalRows }, createPage) => { // вот тут определен pages, тогда  откуда ошибка о неопределнности этого параметра? в HTML же указано такое же наименование элемента
+  let pageCount = 1;
 
-export const initPagination = ({ pages, fromRow, toRow, totalRows }, createPage) => {
-    let currentPage = 1;
+  const applyPagination = (query, state, action) => {
+    const limit = Number(state.rowsPerPage) || 10;
+    let page = Number(state.page) || 1;
 
-    // #2.3 — подготовить шаблон кнопки и очистить контейнер
-    pages.innerHTML = '';
+    if (action?.name === 'next') page++;
+    if (action?.name === 'prev') page--;
+    if (action?.name === 'first') page = 1;
+    if (action?.name === 'last') page = pageCount;
 
-    return (data, state, action) => {
+    page = Math.max(1, Math.min(page, pageCount));
 
-        // #2.1 — считаем количество страниц
-        const total = data.length;
-        const totalPages = Math.ceil(total / ROWS_PER_PAGE);
+    return Object.assign({}, query, { limit, page });
+  };
 
-        // #2.6 — обработка действий
-        if (action === 'pagination' && state.page) {
-            currentPage = Number(state.page);
-        }
+  const updatePagination = (total, { page, limit }) => {
+    pageCount = Math.max(1, Math.ceil(total / limit));
 
-        if (currentPage > totalPages) {
-            currentPage = totalPages || 1;
-        }
+    fromRow.textContent = total === 0 ? 0 : (page - 1) * limit + 1;
+    toRow.textContent = Math.min(page * limit, total);
+    totalRows.textContent = total;
 
-        // #2.4 — получаем список видимых страниц и выводим их
-        pages.innerHTML = '';
+    pages.replaceChildren(
+      ...getPages(page, pageCount).map(p => {
+        const label = document.createElement('label');
+        label.className = 'pagination-button';
 
-        getPages(currentPage, totalPages).forEach(page => {
-            pages.append(createPage(page, page === currentPage));
-        });
+        const input = document.createElement('input');
+        input.type = 'radio';
+        input.name = 'page';
+        input.value = p;
+        input.checked = p === page;
 
-        // #2.5 — обновляем статус пагинации
-        fromRow.textContent = total === 0 ? 0 : (currentPage - 1) * ROWS_PER_PAGE + 1;
-        toRow.textContent = Math.min(currentPage * ROWS_PER_PAGE, total);
-        totalRows.textContent = total;
+        const span = document.createElement('span');
+        span.textContent = p;
 
-        // #2.2 — считаем срез данных
-        const start = (currentPage - 1) * ROWS_PER_PAGE;
-        const end = start + ROWS_PER_PAGE;
+        label.append(input, span);
+        return label;
+      })
+    );
+  };
 
-        return data.slice(start, end);
-    };
-};
-
-
+  return {
+    applyPagination,
+    updatePagination
+  };
+}
