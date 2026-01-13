@@ -17,7 +17,7 @@ export function initTable({ root, onAction }) {
 
   const emptyOption = document.createElement('option');
   emptyOption.value = '';
-  emptyOption.textContent = 'Выберите продавца';
+  emptyOption.textContent = 'Выберите';
 
   sellerSelect.append(emptyOption);
   sellerSelect.addEventListener('change', () => onAction());
