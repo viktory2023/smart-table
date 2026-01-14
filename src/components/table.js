@@ -25,6 +25,10 @@ export function initTable(settings, onAction) {
         onAction();
     });
 
+    root.container.addEventListener('reset', () => {
+        onAction({ name: 'reset' });
+    });
+
     const render = (data) => {
         const rows = data.map(item => {
             const row = cloneTemplate(rowTemplate);

@@ -1,29 +1,46 @@
 export function initFiltering(elements = {}) {
     const { seller } = elements;
 
-    const applyFiltering = (query, state) => {
-        if (state.seller) {
-            query.seller = state.seller;
+    const applyFiltering = (query, state, action) => {
+        if (action?.name === 'clear') {
+            const field = action.dataset.field;
+
+            if (field) {
+                Object.keys(state).forEach(key => {
+                    if (key === field || key.startsWith(field)) {
+                        delete state[key];
+                    }
+                });
+            }
         }
 
-        if (state.customer) {
-            query.customer = state.customer;
+        if (action?.name === 'reset') {
+            Object.values(elements).forEach(el => {
+                if (el && 'value' in el) {
+                    el.value = '';
+                }
+            });
+            return {};
         }
 
-        if (state.date) {
-            query.date = state.date;
-        }
+        const filter = {};
 
-        if (state.totalFrom) {
-            query.totalFrom = state.totalFrom;
-        }
+        Object.keys(elements).forEach(key => {
+            const el = elements[key];
+            if (
+                el &&
+                ['INPUT', 'SELECT'].includes(el.tagName) &&
+                el.value
+            ) {
+                filter[`filter[${el.name}]`] = el.value;
+            }
+        });
 
-        if (state.totalTo) {
-            query.totalTo = state.totalTo;
-        }
-
-        return query;
+        return Object.keys(filter).length
+            ? Object.assign({}, query, filter)
+            : query;
     };
+
 
     const updateIndexes = (elements = {}, indexes = {}) => {
         if (!elements.seller || !Array.isArray(indexes.seller)) return;

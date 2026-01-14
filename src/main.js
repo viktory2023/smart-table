@@ -49,7 +49,7 @@ async function render(action) {
 const sampleTable = initTable({
   tableTemplate: 'table',
   rowTemplate: 'row',
-  before: ['search', 'header', 'filter'],
+  before: ['header', 'filter', 'search'],
   after: ['pagination']
 }, render);
 
@@ -70,7 +70,7 @@ async function init() {
   const indexes = await api.getIndexes();
 
   updateIndexes(sampleTable.filter.elements, {
-    seller: indexes.sellers ?? []
+    searchBySeller: indexes.sellers
   });
 
 }

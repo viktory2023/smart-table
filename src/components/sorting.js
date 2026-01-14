@@ -1,36 +1,21 @@
 export function initSorting(columns = []) {
     return (query, state, action) => {
-        if (!action || action.name !== 'sort') {
-            return query;
-        }
+        if (!action || action.name !== 'sort') return query;
 
         const { field, value } = action.dataset;
+        if (!field) return query;
 
-        if (!field) {
-            return query;
-        }
-
-        const nextValue =
+        const next =
             value === 'asc' ? 'desc' :
-                value === 'desc' ? 'none' :
-                    'asc';
-
+            value === 'desc' ? 'none' : 'asc';
 
         columns.forEach(btn => {
-            if (btn.dataset.field === field) {
-                btn.dataset.value = nextValue;
-            } else {
-                btn.dataset.value = 'none';
-            }
+            btn.dataset.value =
+                btn.dataset.field === field ? next : 'none';
         });
 
-        if (nextValue === 'none') {
-            return query;
-        }
-
-        return Object.assign({}, query, {
-            sort: field,
-            order: nextValue
-        });
+        return next === 'none'
+            ? query
+            : Object.assign({}, query, { sort: field, order: next });
     };
 }
