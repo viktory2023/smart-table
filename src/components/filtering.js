@@ -1,31 +1,37 @@
-export function initFiltering(elements) {
-
-    const updateIndexes = (elements, indexes) => {
-        Object.keys(indexes).forEach(key => {
-            elements[key].append(
-                ...Object.values(indexes[key]).map(value => {
-                    const option = document.createElement('option');
-                    option.value = value;
-                    option.textContent = value;
-                    return option;
-                })
-            );
-        });
-    };
+export function initFiltering(elements = {}) {
+    const { seller } = elements;
 
     const applyFiltering = (query, state) => {
-        const filter = {};
+        if (state.seller) {
+            query.seller = state.seller;
+        }
 
-        Object.keys(elements).forEach(key => {
-            const el = elements[key];
-            if (el && el.value) {
-                filter[`filter[${el.name}]`] = el.value;
-            }
-        });
+        if (state.customer) {
+            query.customer = state.customer;
+        }
 
-        return Object.keys(filter).length
-            ? Object.assign({}, query, filter)
-            : query;
+        if (state.date) {
+            query.date = state.date;
+        }
+
+        if (state.totalFrom) {
+            query.totalFrom = state.totalFrom;
+        }
+
+        if (state.totalTo) {
+            query.totalTo = state.totalTo;
+        }
+
+        return query;
+    };
+
+    const updateIndexes = (elements = {}, indexes = {}) => {
+        if (!elements.seller || !Array.isArray(indexes.seller)) return;
+
+        elements.seller.replaceChildren(
+            new Option('—', ''),
+            ...indexes.seller.map(value => new Option(value, value))
+        );
     };
 
     return {

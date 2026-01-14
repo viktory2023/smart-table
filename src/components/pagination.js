@@ -1,51 +1,50 @@
 import { getPages } from "../lib/utils.js";
 
-export const initPagination = ({ pages, fromRow, toRow, totalRows }, createPage) => {
-  let pageCount = 1;
+let pageCount = 0;
 
-  const applyPagination = (query, state, action) => {
-    const limit = Number(state.rowsPerPage) || 10;
-    let page = Number(state.page) || 1;
+export function initPagination(elements = {}, createPage) {
+    const {
+        pages,
+        fromRow,
+        toRow,
+        totalRows,
+        rowsPerPage
+    } = elements;
 
-    if (action?.name === 'next') page++;
-    if (action?.name === 'prev') page--;
-    if (action?.name === 'first') page = 1;
-    if (action?.name === 'last') page = pageCount;
+    const pageTemplate = createPage();
 
-    page = Math.max(1, Math.min(page, pageCount));
+    const applyPagination = (query, state, action) => {
+        const limit = state.rowsPerPage;
+        let page = state.page;
 
-    return Object.assign({}, query, { limit, page });
-  };
+        if (action) {
+            switch (action.name) {
+                case 'first': page = 1; break;
+                case 'prev': page = Math.max(1, page - 1); break;
+                case 'next': page = Math.min(pageCount, page + 1); break;
+                case 'last': page = pageCount; break;
+                case 'page': page = Number(action.value); break;
+            }
+        }
 
-  const updatePagination = (total, { page, limit }) => {
-    pageCount = Math.max(1, Math.ceil(total / limit));
+        return { ...query, limit, page };
+    };
 
-    fromRow.textContent = total === 0 ? 0 : (page - 1) * limit + 1;
-    toRow.textContent = Math.min(page * limit, total);
-    totalRows.textContent = total;
+    const updatePagination = (total, { page, limit }) => {
+        pageCount = Math.ceil(total / limit);
 
-    pages.replaceChildren(
-      ...getPages(page, pageCount).map(p => {
-        const label = document.createElement('label');
-        label.className = 'pagination-button';
+        if (pages) {
+            const visiblePages = getPages(page, pageCount);
+            pages.replaceChildren(
+                ...visiblePages.map(p => pageTemplate(p, p === page))
+            );
+        }
 
-        const input = document.createElement('input');
-        input.type = 'radio';
-        input.name = 'page';
-        input.value = p;
-        input.checked = p === page;
+        if (fromRow) fromRow.textContent = total ? (page - 1) * limit + 1 : 0;
+        if (toRow) toRow.textContent = Math.min(page * limit, total);
+        if (totalRows) totalRows.textContent = total;
+        if (rowsPerPage) rowsPerPage.value = limit;
+    };
 
-        const span = document.createElement('span');
-        span.textContent = p;
-
-        label.append(input, span);
-        return label;
-      })
-    );
-  };
-
-  return {
-    applyPagination,
-    updatePagination
-  };
+    return { applyPagination, updatePagination };
 }
