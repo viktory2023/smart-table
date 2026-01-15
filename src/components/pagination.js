@@ -1,37 +1,58 @@
 import { getPages } from "../lib/utils.js";
 
-let pageCount = 1;
+export const initPagination = (
+  { pages, fromRow, toRow, totalRows },
+  createPage,
+) => {
+  const pageTemplate = pages.firstElementChild.cloneNode(true);
+  pages.firstElementChild.remove();
 
-export function initPagination(elements = {}, createPage) {
-    const {
-        pages,
-        fromRow,
-        toRow,
-        totalRows,
-        rowsPerPage
-    } = elements;
+  let pageCount;
 
-    const pageTemplate = createPage();
+  const applyPagination = (query, state, action) => {
+    const limit = state.rowsPerPage;
+    let page = state.page;
 
-    const applyPagination = (query, state, action) => {
-        let page = state.page;
-        const limit = state.rowsPerPage;
+    if (action)
+      switch (action.name) {
+        case "prev":
+          page = Math.max(1, page - 1);
+          break;
+        case "next":
+          page = Math.min(pageCount || page, page + 1);
+          break;
+        case "first":
+          page = 1;
+          break;
+        case "last":
+          page = pageCount || page;
+          break;
+      }
 
-        if (action?.name === 'next') page++;
-        if (action?.name === 'prev') page--;
-        if (action?.name === 'first') page = 1;
-        if (action?.name === 'last') page = pageCount;
-        if (action?.name === 'page') page = Number(action.value);
+    return Object.assign({}, query, {
+      limit,
+      page,
+    });
+  };
 
-        page = Math.max(1, Math.min(page, pageCount));
+  const updatePagination = (total, { page, limit }) => {
+    pageCount = Math.ceil(total / limit);
 
-        return Object.assign({}, query, { page, limit });
-    };
+    const visiblePages = getPages(page, pageCount, 5);
+    pages.replaceChildren(
+      ...visiblePages.map((pageNumber) => {
+        const el = pageTemplate.cloneNode(true);
+        return createPage(el, pageNumber, pageNumber === page);
+      }),
+    );
 
-    const updatePagination = (total, { page, limit }) => {
-        pageCount = Math.ceil(total / limit);
-    };
+    fromRow.textContent = (page - 1) * limit + 1;
+    toRow.textContent = Math.min(page * limit, total);
+    totalRows.textContent = total;
+  };
 
-    return { applyPagination, updatePagination };
-
-}
+  return {
+    updatePagination,
+    applyPagination,
+  };
+};

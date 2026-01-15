@@ -1,60 +1,51 @@
 import { cloneTemplate } from "../lib/utils.js";
 
+/**
+ * Инициализирует таблицу и вызывает коллбэк при любых изменениях и нажатиях на кнопки
+ *
+ * @param {Object} settings
+ * @param {(action: HTMLButtonElement | undefined) => void} onAction
+ * @returns {{container: Node, elements: *, render: render}}
+ */
 export function initTable(settings, onAction) {
-    const { tableTemplate, rowTemplate, before = [], after = [] } = settings;
-    const root = cloneTemplate(tableTemplate);
+  const { tableTemplate, rowTemplate, before, after } = settings;
+  const root = cloneTemplate(tableTemplate);
 
-    before.forEach(templateName => {
-        const tpl = cloneTemplate(templateName);
-        root.container.prepend(tpl.container);
-        Object.assign(root.elements, tpl.elements);
+  before.reverse().forEach((subName) => {
+    root[subName] = cloneTemplate(subName);
+    root.container.prepend(root[subName].container);
+  });
+
+  after.forEach((subName) => {
+    root[subName] = cloneTemplate(subName);
+    root.container.append(root[subName].container);
+  });
+
+  root.container.addEventListener("change", () => {
+    onAction();
+  });
+
+  root.container.addEventListener("reset", () => {
+    setTimeout(onAction, 500);
+  });
+
+  root.container.addEventListener("submit", (e) => {
+    e.preventDefault();
+    onAction(e.submitter);
+  });
+
+  const render = (data) => {
+    const nextRows = data.map((item) => {
+      const row = cloneTemplate(rowTemplate);
+      Object.keys(item).forEach((key) => {
+        if (row.elements[key]) {
+          row.elements[key].textContent = item[key];
+        }
+      });
+      return row.container;
     });
+    root.elements.rows.replaceChildren(...nextRows);
+  };
 
-    after.forEach(templateName => {
-        const tpl = cloneTemplate(templateName);
-        root.container.append(tpl.container);
-        Object.assign(root.elements, tpl.elements);
-    });
-
-    root.container.addEventListener('submit', e => {
-        e.preventDefault();
-        onAction(e.submitter);
-    });
-
-    root.container.addEventListener('change', () => {
-        onAction();
-    });
-
-    root.container.addEventListener('reset', () => {
-        onAction({ name: 'reset' });
-    });
-
-    const render = (data) => {
-        const rows = data.map(item => {
-            const row = cloneTemplate(rowTemplate);
-
-            Object.entries(item).forEach(([key, value]) => {
-                if (row.elements[key]) {
-                    row.elements[key].textContent = value;
-                }
-            });
-
-            return row.container;
-        });
-
-        root.elements.rows.replaceChildren(...rows);
-    };
-
-    return {
-        container: root.container,
-        elements: root.elements,
-        render,
-        pagination: {
-            elements: root.elements.pagination
-        },
-        filter: {
-            elements: root.elements.filter
-        },
-        columns: root.elements.header?.querySelectorAll('[data-field]')
-    };
+  return { ...root, render };
 }

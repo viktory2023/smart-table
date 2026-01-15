@@ -1,21 +1,30 @@
-export function initSorting(columns = []) {
-    return (query, state, action) => {
-        if (!action || action.name !== 'sort') return query;
+import { sortMap } from "../lib/sort.js";
 
-        const { field, value } = action.dataset;
-        if (!field) return query;
+export function initSorting(columns) {
+  return (query, state, action) => {
+    let field = null;
+    let order = null;
 
-        const next =
-            value === 'asc' ? 'desc' :
-            value === 'desc' ? 'none' : 'asc';
+    if (action && action.name === "sort") {
+      action.dataset.value = sortMap[action.dataset.value];
+      field = action.dataset.field;
+      order = action.dataset.value;
 
-        columns.forEach(btn => {
-            btn.dataset.value =
-                btn.dataset.field === field ? next : 'none';
-        });
+      columns.forEach((column) => {
+        if (column.dataset.field !== action.dataset.field) {
+          column.dataset.value = "none";
+        }
+      });
+    } else {
+      columns.forEach((column) => {
+        if (column.dataset.value !== "none") {
+          field = column.dataset.field;
+          order = column.dataset.value;
+        }
+      });
+    }
 
-        return next === 'none'
-            ? query
-            : Object.assign({}, query, { sort: field, order: next });
-    };
+    const sort = field && order !== "none" ? `${field}:${order}` : null;
+    return sort ? Object.assign({}, query, { sort }) : query;
+  };
 }

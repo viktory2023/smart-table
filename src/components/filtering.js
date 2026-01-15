@@ -1,58 +1,41 @@
-export function initFiltering(elements = {}) {
-    const { seller } = elements;
+export function initFiltering(elements) {
+  const updateIndexes = (elements, indexes) => {
+    Object.keys(indexes).forEach((elementName) => {
+      elements[elementName].append(
+        ...Object.values(indexes[elementName]).map((name) => {
+          const el = document.createElement("option");
+          el.textContent = name;
+          el.value = name;
+          return el;
+        }),
+      );
+    });
+  };
 
-    const applyFiltering = (query, state, action) => {
-        if (action?.name === 'clear') {
-            const field = action.dataset.field;
+  const applyFiltering = (query, state, action) => {
+    if (action && action.name === "reset") {
+      return query;
+    }
 
-            if (field) {
-                Object.keys(state).forEach(key => {
-                    if (key === field || key.startsWith(field)) {
-                        delete state[key];
-                    }
-                });
-            }
+    const filter = {};
+    Object.keys(elements).forEach((key) => {
+      if (elements[key]) {
+        if (
+          ["INPUT", "SELECT"].includes(elements[key].tagName) &&
+          elements[key].value
+        ) {
+          filter[`filter[${elements[key].name}]`] = elements[key].value;
         }
+      }
+    });
 
-        if (action?.name === 'reset') {
-            Object.values(elements).forEach(el => {
-                if (el && 'value' in el) {
-                    el.value = '';
-                }
-            });
-            return {};
-        }
+    return Object.keys(filter).length
+      ? Object.assign({}, query, filter)
+      : query;
+  };
 
-        const filter = {};
-
-        Object.keys(elements).forEach(key => {
-            const el = elements[key];
-            if (
-                el &&
-                ['INPUT', 'SELECT'].includes(el.tagName) &&
-                el.value
-            ) {
-                filter[`filter[${el.name}]`] = el.value;
-            }
-        });
-
-        return Object.keys(filter).length
-            ? Object.assign({}, query, filter)
-            : query;
-    };
-
-
-    const updateIndexes = (elements = {}, indexes = {}) => {
-        if (!elements.seller || !Array.isArray(indexes.seller)) return;
-
-        elements.seller.replaceChildren(
-            new Option('—', ''),
-            ...indexes.seller.map(value => new Option(value, value))
-        );
-    };
-
-    return {
-        applyFiltering,
-        updateIndexes
-    };
+  return {
+    updateIndexes,
+    applyFiltering,
+  };
 }
