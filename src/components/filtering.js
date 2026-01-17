@@ -17,6 +17,17 @@ export function initFiltering(elements) {
       return query;
     }
 
+    if (action?.name === 'clear') {
+      const field = action.dataset.field;
+
+      const input = document.querySelector(`[name="${field}"]`);
+      if (input) input.value = '';
+
+      delete nextQuery[field];
+
+      return nextQuery;
+    }
+    
     const filter = {};
     Object.keys(elements).forEach((key) => {
       if (elements[key]) {
